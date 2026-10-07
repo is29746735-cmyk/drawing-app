@@ -142,6 +142,29 @@
     </form>
   </dialog>
 
+  <!-- 인터넷 창고 연결 -->
+  <dialog id="sync-dlg" class="sheet-up">
+    <form id="sync-form" novalidate>
+      <h2>인터넷 창고 연결</h2>
+      <p class="hint">Turso 데이터베이스 주소와 토큰을 넣어요. 토큰은 이 폰에만 저장돼요.</p>
+      <label class="field small-field">
+        <span>주소</span>
+        <input id="sync-url" class="name-input" placeholder="libsql://drawing-app-이름.turso.io"
+          autocomplete="off" autocapitalize="off" spellcheck="false" inputmode="url">
+      </label>
+      <label class="field small-field">
+        <span>토큰</span>
+        <input id="sync-token" class="name-input" type="password" placeholder="Turso에서 만든 토큰 붙여넣기"
+          autocomplete="off" autocapitalize="off" spellcheck="false">
+      </label>
+      <p class="error" id="sync-error" role="alert"></p>
+      <div class="sheet-foot plain">
+        <button type="button" class="ghost" data-close>취소</button>
+        <button type="submit" class="solid" id="sync-save">연결하기</button>
+      </div>
+    </form>
+  </dialog>
+
   <!-- 메뉴 -->
   <dialog id="menu" class="sheet-up">
     <h2>메뉴</h2>
@@ -151,6 +174,13 @@
       백업 파일 불러오기
       <input type="file" id="import-file" accept=".json,application/json" hidden>
     </label>
+    <h3>인터넷 창고 (Turso)</h3>
+    <p class="hint sync-line" id="sync-status"></p>
+    <div class="sync-actions">
+      <button type="button" class="chip-btn" id="sync-connect">연결하기</button>
+      <button type="button" class="chip-btn" id="sync-now" hidden>지금 맞추기</button>
+      <button type="button" class="chip-btn" id="sync-off" hidden>연결 끊기</button>
+    </div>
     <h3>화면 밝기</h3>
     <div class="seg small theme-seg" id="theme-seg">
       <button type="button" data-theme-pick="auto">폰 설정대로</button>

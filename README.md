@@ -22,6 +22,8 @@ node tools/serve.mjs
 | `styles.css` | 생김새 (색·글꼴·배치) |
 | `app.js` | 버튼을 누르면 일어나는 일 전부 |
 | `db.js` | 휴대폰 안 저장소 |
+| `sync.js` | 인터넷 창고(Turso)와 맞추기. 주소·토큰은 폰에만 저장 |
+| `tools/mock-turso.mjs` | PC 시험용 가짜 Turso (`node tools/mock-turso.mjs`, 토큰 `test`) |
 | `sw.js` | 인터넷 없이 열기, "공유 → 보관함" 받기 |
 | `manifest.webmanifest` | 홈 화면 설치용 이름·아이콘 |
 | `tools/make-icons.mjs` | 앱 아이콘 다시 만들기 |

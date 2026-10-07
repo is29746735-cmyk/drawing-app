@@ -1,4 +1,5 @@
 import * as db from './db.js';
+import * as sync from './sync.js';
 
 // 마커 색 [바탕, 글자]. 태그를 만들 때마다 차례로 하나씩 붙는다.
 const MARKERS = [
@@ -599,6 +600,85 @@ function endPointer(e) {
 stage.addEventListener('pointerup', endPointer);
 stage.addEventListener('pointercancel', endPointer);
 
+/* ---------- 인터넷 창고(Turso) ---------- */
+
+function fmtTime(ms) {
+  const d = new Date(ms);
+  return `${fmtDate(ms)} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+const SYNC_ERRORS = {
+  auth: '토큰이 맞지 않아요. 연결을 끊고 새 토큰으로 다시 연결해주세요.',
+  offline: '인터넷이 꺼져 있어요. 연결되면 저절로 맞춰요.',
+  network: '창고에 닿지 못했어요. 주소를 확인하거나 잠시 뒤에 다시 시도해주세요.',
+  server: '창고에서 문제가 생겼어요. 잠시 뒤에 다시 시도해주세요.',
+};
+
+function drawSyncStatus(s) {
+  const on = !!sync.getSettings();
+  const line = $('#sync-status');
+  let text = '연결 안 됨. 지금은 이 폰 안에만 저장돼요.';
+  if (on && s.state === 'syncing') {
+    text = s.progress ? `맞추는 중… 사진 ${s.progress.n}/${s.progress.total}` : '맞추는 중…';
+  } else if (on && s.state === 'error') {
+    text = SYNC_ERRORS[s.error] || SYNC_ERRORS.network;
+  } else if (on) {
+    text = s.at ? `연결됨 · 마지막으로 맞춘 때 ${fmtTime(s.at)}` : '연결됨';
+  }
+  line.textContent = text;
+  line.classList.toggle('bad', on && s.state === 'error');
+  $('#sync-connect').hidden = on;
+  $('#sync-now').hidden = !on;
+  $('#sync-off').hidden = !on;
+}
+
+$('#sync-connect').addEventListener('click', () => {
+  $('#sync-url').value = '';
+  $('#sync-token').value = '';
+  $('#sync-error').textContent = '';
+  openModal($('#sync-dlg'));
+});
+
+$('#sync-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const url = $('#sync-url').value.trim();
+  const token = $('#sync-token').value.trim();
+  const err = $('#sync-error');
+  // http://localhost 는 PC에서 가짜 Turso(tools/mock-turso.mjs)로 시험할 때만 쓴다.
+  if (!/^(libsql:\/\/|https:\/\/|http:\/\/localhost)[^/\s]*/.test(url)) {
+    err.textContent = '주소는 libsql:// 로 시작해요. Turso에서 복사한 주소를 그대로 넣어주세요.';
+    return;
+  }
+  if (!token) {
+    err.textContent = '토큰을 넣어주세요.';
+    return;
+  }
+  const btn = $('#sync-save');
+  btn.disabled = true;
+  btn.textContent = '확인 중…';
+  try {
+    await sync.testConnection({ url, token });
+    sync.saveSettings({ url, token });
+    closeModal();
+    toast('인터넷 창고에 연결했어요');
+    sync.syncNow();
+  } catch (error) {
+    err.textContent = error.kind === 'auth'
+      ? '토큰이 맞지 않아요. Turso에서 복사한 토큰을 다시 붙여넣어 주세요.'
+      : SYNC_ERRORS[error.kind] || SYNC_ERRORS.network;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '연결하기';
+  }
+});
+
+$('#sync-now').addEventListener('click', () => sync.syncNow());
+$('#sync-off').addEventListener('click', () => {
+  if (!confirm('인터넷 창고 연결을 끊을까요? 이 폰과 창고에 있는 것은 그대로 남아요.')) return;
+  sync.saveSettings(null);
+  sync.schedule(0);
+});
+
 /* ---------- 메뉴: 백업, 태그 지우기 ---------- */
 
 async function openMenu() {
@@ -758,7 +838,7 @@ $('#tag-manage').addEventListener('click', async (e) => {
   state.tags = state.tags.filter((t) => t.name !== name);
   await db.setMeta('tags', state.tags);
   const changed = state.items.filter((i) => i.tags.includes(name))
-    .map((i) => ({ ...i, tags: i.tags.filter((t) => t !== name) }));
+    .map((i) => ({ ...i, tags: i.tags.filter((t) => t !== name), updatedAt: Date.now() }));
   if (changed.length) await db.putMany('items', changed);
   await load();
   render();
@@ -907,26 +987,41 @@ async function takeShared() {
   openSheet({ kind: box.files.length ? 'ref' : 'idea', text: box.text, files: box.files });
 }
 
-async function start() {
+// 태그·보관함 목록을 서랍장에서 읽는다. 처음이면 기본값을 넣는다.
+// 기본값은 "아주 옛날(0)에 만든 것"으로 적어서, 인터넷 창고에 있는 목록이 이기게 한다.
+async function loadLists() {
   let tags = await db.getMeta('tags', null);
   if (!tags) {
     tags = DEFAULT_TAGS.map((name, color) => ({ name, color }));
-    await db.setMeta('tags', tags);
+    await db.setMeta('tags', tags, 0);
   }
   state.tags = tags;
 
   let boxes = await db.getMeta('boxes', null);
   if (!boxes) {
-    boxes = [{ id: 'main', name: '보관함', createdAt: Date.now() }];
-    await db.setMeta('boxes', boxes);
+    boxes = [{ id: 'main', name: '보관함', createdAt: 0 }];
+    await db.setMeta('boxes', boxes, 0);
   }
   state.boxes = boxes;
   const current = await db.getMeta('currentBox', 'main');
   state.box = boxes.some((b) => b.id === current) ? current : boxes[0].id;
+}
 
+async function start() {
+  await loadLists();
   await load();
   render();
   await takeShared();
+  sync.start({
+    // 창고에서 새로 받아온 것이 있으면 화면을 다시 그린다.
+    onPulled: async () => {
+      await loadLists();
+      await load();
+      render();
+      refreshOpenViews();
+    },
+    onStatus: drawSyncStatus,
+  });
 }
 
 if ('serviceWorker' in navigator) {

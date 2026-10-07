@@ -53,24 +53,51 @@ async function run(store, mode, fn) {
   return result;
 }
 
+/* 인터넷 창고(sync.js)와 맞추기 위한 기록
+   - 바뀐 것이 생기면 onChange로 알려준다.
+   - 지운 것은 "지움 표시(tombstone)"로 남겨서 창고에서도 지우게 한다.
+   - quiet: 창고에서 받아온 것을 넣을 때는 다시 알리지 않는다. */
+const SYNCED_META = ['tags', 'boxes'];
+let onChange = () => {};
+export const setChangeListener = (fn) => { onChange = fn; };
+function changed(store, key) {
+  if (store === 'items' || store === 'images' || (store === 'meta' && SYNCED_META.includes(key))) onChange();
+}
+
 export const getAll = (store) => run(store, 'readonly', (s) => done(s.getAll()));
 export const get = (store, id) => run(store, 'readonly', (s) => done(s.get(id)));
-export const put = (store, value) => run(store, 'readwrite', (s) => done(s.put(value)));
-export const remove = (store, id) => run(store, 'readwrite', (s) => done(s.delete(id)));
 
-export async function putMany(store, values) {
+export async function put(store, value, { quiet = false } = {}) {
+  const result = await run(store, 'readwrite', (s) => done(s.put(value)));
+  if (!quiet) changed(store, value.key);
+  return result;
+}
+
+export async function remove(store, id, { quiet = false } = {}) {
+  await run(store, 'readwrite', (s) => done(s.delete(id)));
+  if (quiet || (store !== 'items' && store !== 'images')) return;
+  const marks = await getMeta('_tombstones', {});
+  marks[`${store}:${id}`] = Date.now();
+  await setMeta('_tombstones', marks);
+  changed(store);
+}
+
+export async function putMany(store, values, { quiet = false } = {}) {
   const d = await open();
   const t = d.transaction(store, 'readwrite');
   const s = t.objectStore(store);
   values.forEach((v) => s.put(v));
-  return new Promise((resolve, reject) => {
+  await new Promise((resolve, reject) => {
     t.oncomplete = resolve;
     t.onerror = () => reject(t.error);
   });
+  if (!quiet && values.length) changed(store, values[0].key);
 }
 
 export async function getMeta(key, fallback) {
   const row = await get('meta', key);
   return row ? row.value : fallback;
 }
-export const setMeta = (key, value) => put('meta', { key, value });
+// updatedAt: 언제 바꿨는지. 창고와 비교해서 더 최근 것을 남긴다.
+export const setMeta = (key, value, updatedAt = Date.now(), opts) =>
+  put('meta', { key, value, updatedAt }, opts);

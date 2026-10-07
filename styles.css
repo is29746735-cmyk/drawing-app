@@ -96,6 +96,17 @@ button { cursor: pointer; }
 .name-input:focus { outline: 2px solid var(--ink); outline-offset: -1px; }
 .sheet-foot.plain { padding: 14px 0 0; border: 0; background: none; }
 #box-name .error { margin-top: 8px; }
+
+/* 인터넷 창고 */
+.sync-line { margin: 0 0 8px; }
+.sync-line.bad { color: var(--danger); }
+.sync-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.sync-actions .chip-btn { height: 36px; }
+.small-field { margin: 14px 0 0; }
+.small-field > span { font-size: 13px; font-weight: 600; display: block; }
+.small-field .name-input { margin-top: 6px; }
+#sync-dlg .hint { display: block; }
+#sync-dlg .error { margin-top: 10px; }
 .icon-btn {
   border: 0; background: none; font-size: 22px; line-height: 1;
   width: 40px; height: 40px; border-radius: 50%;
