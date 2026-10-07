@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fbfbfa">
+  <title>보관함</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <h1>보관함</h1>
+    <span class="count" id="count"></span>
+    <button class="icon-btn" id="menu-btn" aria-label="메뉴">⋯</button>
+  </header>
+
+  <nav class="seg" role="tablist">
+    <button role="tab" data-tab="idea">아이디어</button>
+    <button role="tab" data-tab="ref">자료</button>
+  </nav>
+
+  <div class="caps" id="caps"></div>
+
+  <main id="list"></main>
+
+  <button class="fab" id="add-btn">+ 담기</button>
+
+  <!-- 담기 / 수정 -->
+  <dialog id="sheet" class="full">
+    <form method="dialog" id="sheet-form" novalidate>
+      <header class="bar">
+        <button type="button" class="text-btn" data-close>취소</button>
+        <h2 id="sheet-title">새로 담기</h2>
+        <button type="submit" class="text-btn strong" id="sheet-save">담기</button>
+      </header>
+      <div class="sheet-body">
+        <div class="seg small" id="kind-seg">
+          <button type="button" data-kind="idea">아이디어</button>
+          <button type="button" data-kind="ref">자료</button>
+        </div>
+
+        <label class="field">
+          <span id="text-label">그리고 싶은 장면이나 문장</span>
+          <textarea id="text" rows="4" placeholder="비 오는 버스 정류장, 우산 없이 웃는 사람"></textarea>
+        </label>
+
+        <div class="field">
+          <span>사진</span>
+          <div class="photos" id="photos"></div>
+          <label class="pick" id="pick">
+            <input type="file" id="file" accept="image/*" multiple hidden>
+            + 사진 고르기
+          </label>
+          <p class="hint" id="photo-hint"></p>
+        </div>
+
+        <div class="field">
+          <span>태그</span>
+          <div class="caps wrap" id="tag-pick"></div>
+          <div class="new-tag">
+            <input id="new-tag" placeholder="새 태그 이름" maxlength="12" enterkeyhint="done">
+            <button type="button" class="chip-btn" id="new-tag-btn">추가</button>
+          </div>
+        </div>
+
+        <p class="error" id="sheet-error" role="alert"></p>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 아이디어 자세히 보기 -->
+  <dialog id="detail" class="full">
+    <header class="bar">
+      <button type="button" class="text-btn" data-close>닫기</button>
+      <h2></h2>
+      <button type="button" class="text-btn" id="detail-edit">수정</button>
+    </header>
+    <div class="detail-body" id="detail-body"></div>
+    <div class="bottom-actions">
+      <button type="button" class="danger-btn" id="detail-delete">삭제</button>
+    </div>
+  </dialog>
+
+  <!-- 사진 크게 보기 -->
+  <dialog id="viewer" class="full dark">
+    <div class="stage" id="stage"><img id="viewer-img" alt=""></div>
+    <header class="bar over">
+      <button type="button" class="text-btn" data-close>닫기</button>
+      <span class="pos" id="viewer-pos"></span>
+      <span></span>
+    </header>
+    <footer class="viewer-foot" id="viewer-foot">
+      <div class="caps" id="viewer-tags"></div>
+      <p class="viewer-note" id="viewer-note"></p>
+      <div class="viewer-actions">
+        <button type="button" class="text-btn" id="viewer-edit">수정</button>
+        <button type="button" class="text-btn danger" id="viewer-delete">삭제</button>
+      </div>
+    </footer>
+  </dialog>
+
+  <!-- 메뉴 -->
+  <dialog id="menu" class="sheet-up">
+    <h2>메뉴</h2>
+    <p class="hint" id="usage"></p>
+    <button type="button" class="menu-item" id="export-btn">백업 파일로 내보내기</button>
+    <label class="menu-item">
+      백업 파일 불러오기
+      <input type="file" id="import-file" accept=".json,application/json" hidden>
+    </label>
+    <h3>태그 지우기</h3>
+    <div class="caps wrap" id="tag-manage"></div>
+    <button type="button" class="text-btn" data-close>닫기</button>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
