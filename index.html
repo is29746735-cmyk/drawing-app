@@ -11,6 +11,13 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=IBM+Plex+Sans+KR:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <script>
+    // 야간 모드 설정을 화면이 그려지기 전에 먼저 적용 (깜빡임 방지)
+    try {
+      const t = localStorage.getItem('theme');
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch {}
+  </script>
 </head>
 <body>
   <header class="top">
@@ -49,7 +56,7 @@
           <textarea id="text" rows="4" placeholder="비 오는 버스 정류장, 우산 없이 웃는 사람"></textarea>
         </label>
 
-        <div class="field">
+        <div class="field" id="photo-field">
           <span>사진</span>
           <div class="photos" id="photos"></div>
           <label class="pick" id="pick">
@@ -70,6 +77,10 @@
 
         <p class="error" id="sheet-error" role="alert"></p>
       </div>
+      <footer class="sheet-foot">
+        <button type="button" class="ghost" data-close>취소</button>
+        <button type="submit" class="solid" id="sheet-save-bottom">담기</button>
+      </footer>
     </form>
   </dialog>
 
@@ -113,6 +124,12 @@
       백업 파일 불러오기
       <input type="file" id="import-file" accept=".json,application/json" hidden>
     </label>
+    <h3>화면 밝기</h3>
+    <div class="seg small theme-seg" id="theme-seg">
+      <button type="button" data-theme-pick="auto">폰 설정대로</button>
+      <button type="button" data-theme-pick="light">밝게</button>
+      <button type="button" data-theme-pick="dark">야간 모드</button>
+    </div>
     <h3>태그 지우기</h3>
     <div class="caps wrap" id="tag-manage"></div>
     <button type="button" class="text-btn" data-close>닫기</button>

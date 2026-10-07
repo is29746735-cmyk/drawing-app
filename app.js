@@ -209,7 +209,7 @@ function openSheet({ item = null, kind = state.tab, text = '', files = [] } = {}
     tags: new Set(item ? item.tags : state.filter ? [state.filter] : []),
   };
   $('#sheet-title').textContent = item ? '수정' : '새로 담기';
-  $('#sheet-save').textContent = item ? '저장' : '담기';
+  setSaveLabel(item ? '저장' : '담기');
   $('#kind-seg').hidden = !!item;
   $('#text').value = item ? item.text : text;
   $('#new-tag').value = '';
@@ -218,8 +218,19 @@ function openSheet({ item = null, kind = state.tab, text = '', files = [] } = {}
   openModal($('#sheet'));
 }
 
+// 담기 버튼이 위·아래 두 곳에 있어서 같이 바꾼다.
+const saveButtons = () => [$('#sheet-save'), $('#sheet-save-bottom')];
+function setSaveLabel(text, disabled = false) {
+  saveButtons().forEach((b) => {
+    b.textContent = text;
+    b.disabled = disabled;
+  });
+}
+
 function drawSheet() {
   const isRef = draft.kind === 'ref';
+  // 아이디어는 글만, 사진은 자료 칸에서만 담는다.
+  $('#photo-field').hidden = !isRef;
   document.querySelectorAll('[data-kind]').forEach((b) =>
     b.setAttribute('aria-selected', b.dataset.kind === draft.kind));
 
@@ -303,26 +314,24 @@ $('#new-tag').addEventListener('keydown', (e) => {
 $('#sheet-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const text = $('#text').value.trim();
-  const photoCount = draft.keep.length + draft.files.length;
+  const isRef = draft.kind === 'ref';
   const err = $('#sheet-error');
 
-  if (draft.kind === 'idea' && !text && !photoCount) {
-    err.textContent = '장면이나 문장을 적거나, 사진을 하나 이상 넣어주세요.';
+  if (!isRef && !text) {
+    err.textContent = '그리고 싶은 장면이나 문장을 적어주세요.';
     return;
   }
-  if (draft.kind === 'ref' && !photoCount) {
+  if (isRef && !draft.keep.length && !draft.files.length) {
     err.textContent = '자료에는 사진이 하나 이상 필요해요.';
     return;
   }
 
-  const save = $('#sheet-save');
-  save.disabled = true;
-  save.textContent = '저장 중…';
+  setSaveLabel('저장 중…', true);
   try {
     const tags = state.tags.map((t) => t.name).filter((n) => draft.tags.has(n));
     const now = Date.now();
     const newIds = [];
-    for (const f of draft.files) newIds.push(await saveImage(f.file));
+    if (isRef) for (const f of draft.files) newIds.push(await saveImage(f.file));
 
     if (draft.item) {
       for (const id of draft.removed) {
@@ -352,8 +361,7 @@ $('#sheet-form').addEventListener('submit', async (e) => {
     console.error(error);
     err.textContent = '저장하지 못했어요. 사진 형식을 확인하고 다시 시도해주세요.';
   } finally {
-    save.disabled = false;
-    save.textContent = draft.item ? '저장' : '담기';
+    setSaveLabel(draft.item ? '저장' : '담기');
   }
 });
 
@@ -575,6 +583,42 @@ async function openMenu() {
   drawTagManage();
   openModal($('#menu'));
 }
+
+// 메뉴 바깥(어두운 부분)을 누르면 닫힌다.
+$('#menu').addEventListener('click', (e) => {
+  if (e.target !== e.currentTarget) return;
+  const r = e.currentTarget.getBoundingClientRect();
+  const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+  if (!inside) closeModal();
+});
+
+// 화면 밝기: auto(폰 설정대로) / light / dark. 이 폰에만 기억해 둔다.
+function readTheme() {
+  try {
+    return localStorage.getItem('theme') || 'auto';
+  } catch {
+    return 'auto';
+  }
+}
+function applyTheme(pick) {
+  const root = document.documentElement;
+  if (pick === 'auto') delete root.dataset.theme;
+  else root.dataset.theme = pick;
+  try {
+    localStorage.setItem('theme', pick);
+  } catch {}
+  document.querySelectorAll('[data-theme-pick]').forEach((b) =>
+    b.setAttribute('aria-selected', b.dataset.themePick === pick));
+  // 폰 맨 위 상태 표시줄 색도 바탕색에 맞춘다.
+  const paper = getComputedStyle(root).getPropertyValue('--paper').trim();
+  document.querySelector('meta[name="theme-color"]').content = paper;
+}
+$('#theme-seg').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-theme-pick]');
+  if (b) applyTheme(b.dataset.themePick);
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyTheme(readTheme()));
+applyTheme(readTheme());
 
 function drawTagManage() {
   $('#tag-manage').innerHTML = state.tags.map((t) =>
