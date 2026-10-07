@@ -172,13 +172,26 @@ button { cursor: pointer; }
 .empty strong { display: block; color: var(--ink); font-size: 17px; margin-bottom: 6px; }
 
 /* 담기 버튼 */
-.fab {
+.dock {
   position: fixed; left: 16px; right: 16px; bottom: calc(16px + var(--safe-b));
-  height: 52px; border: 0; border-radius: 14px;
-  background: var(--ink); color: var(--paper); font-weight: 600; font-size: 16px;
   max-width: 520px; margin: 0 auto;
+  display: flex; gap: 8px;
 }
-.fab:active { transform: scale(0.98); }
+.fab {
+  flex: 1; height: 52px; border: 0; border-radius: 14px;
+  background: var(--ink); color: var(--paper); font-weight: 600; font-size: 16px;
+}
+.dock-tab {
+  flex: none; height: 52px; padding: 0 16px; border-radius: 14px;
+  border: 1px solid var(--line); background: var(--card); font-size: 15px; font-weight: 600;
+}
+.fab:active, .dock-tab:active { transform: scale(0.98); }
+
+/* 칸을 넘길 때 목록이 밀려 들어오는 움직임 */
+@keyframes from-right { from { transform: translateX(40px); opacity: 0; } }
+@keyframes from-left { from { transform: translateX(-40px); opacity: 0; } }
+#list.in-right { animation: from-right 0.22s ease-out; }
+#list.in-left { animation: from-left 0.22s ease-out; }
 
 /* 대화상자 공통 */
 dialog { border: 0; padding: 0; color: var(--ink); }
@@ -296,5 +309,5 @@ dialog.sheet-up > .text-btn { display: block; margin: 16px auto 0; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; }
+  * { transition: none !important; animation: none !important; }
 }

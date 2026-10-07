@@ -127,6 +127,9 @@ function render() {
     b.setAttribute('aria-selected', b.dataset.tab === state.tab);
     b.textContent = `${b.dataset.tab === 'idea' ? '아이디어' : '자료'} ${n}`;
   });
+  // 아래 화살표는 지금 칸이 아닌 쪽 하나만 보인다.
+  $('#go-idea').hidden = state.tab === 'idea';
+  $('#go-ref').hidden = state.tab === 'ref';
 
   const items = inTab();
   const used = state.tags.map((t) => t.name).filter((n) => items.some((i) => i.tags.includes(n)));
@@ -820,14 +823,44 @@ $('#import-file').addEventListener('change', async (e) => {
 
 /* ---------- 첫 화면 ---------- */
 
-$('.seg[role="tablist"]').addEventListener('click', (e) => {
-  const b = e.target.closest('[data-tab]');
-  if (!b || b.dataset.tab === state.tab) return;
-  state.tab = b.dataset.tab;
+// 아이디어(왼쪽) ↔ 자료(오른쪽) 칸 넘기기
+function setTab(tab) {
+  if (tab === state.tab) return;
+  state.tab = tab;
   state.filter = null;
   render();
   window.scrollTo(0, 0);
+  const list = $('#list');
+  list.classList.remove('in-left', 'in-right');
+  void list.offsetWidth; // 움직임을 처음부터 다시 시작
+  list.classList.add(tab === 'ref' ? 'in-right' : 'in-left');
+}
+
+$('.seg[role="tablist"]').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-tab]');
+  if (b) setTab(b.dataset.tab);
 });
+document.querySelectorAll('[data-go-tab]').forEach((b) =>
+  b.addEventListener('click', () => setTab(b.dataset.goTab)));
+
+// 화면을 옆으로 밀어서 넘기기 (창이 열려 있거나, 태그 줄·글 입력칸에서는 무시)
+let swipe = null;
+document.addEventListener('touchstart', (e) => {
+  const t = e.touches[0];
+  swipe = e.touches.length === 1 && !e.target.closest('dialog, .caps, input, textarea')
+    ? { x: t.clientX, y: t.clientY, at: Date.now() }
+    : null;
+}, { passive: true });
+document.addEventListener('touchend', (e) => {
+  if (!swipe) return;
+  const t = e.changedTouches[0];
+  const dx = t.clientX - swipe.x;
+  const dy = t.clientY - swipe.y;
+  const quick = Date.now() - swipe.at < 700;
+  swipe = null;
+  if (!quick || Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx) * 0.6) return;
+  setTab(dx < 0 ? 'ref' : 'idea');
+}, { passive: true });
 
 $('#caps').addEventListener('click', (e) => {
   const b = e.target.closest('[data-filter]');

@@ -36,7 +36,12 @@
 
   <main id="list"></main>
 
-  <button class="fab" id="add-btn">+ 담기</button>
+  <!-- 엄지가 닿는 아래쪽: 칸 넘기기 화살표 + 담기 -->
+  <div class="dock">
+    <button class="dock-tab" id="go-idea" data-go-tab="idea">‹ 아이디어</button>
+    <button class="fab" id="add-btn">+ 담기</button>
+    <button class="dock-tab" id="go-ref" data-go-tab="ref">자료 ›</button>
+  </div>
 
   <!-- 담기 / 수정 -->
   <dialog id="sheet" class="full">
