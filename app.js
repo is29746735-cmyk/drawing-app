@@ -19,7 +19,8 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => (
 ));
 const uid = () => crypto.randomUUID();
 
-const state = { tab: 'idea', filter: null, items: [], tags: [] };
+// boxes: [{ id, name, createdAt }]  box: 지금 보고 있는 보관함 id
+const state = { tab: 'idea', filter: null, items: [], tags: [], boxes: [], box: 'main' };
 
 /* ---------- 태그 ---------- */
 
@@ -111,16 +112,21 @@ async function load() {
   state.items = (await db.getAll('items')).sort((a, b) => b.createdAt - a.createdAt);
 }
 
-const inTab = () => state.items.filter((i) => i.kind === state.tab);
+// 예전에 담은 것(보관함이 하나뿐이던 때)은 기본 보관함 'main'에 들어 있는 것으로 본다.
+const boxOf = (i) => i.boxId || 'main';
+const inBox = (boxId = state.box) => state.items.filter((i) => boxOf(i) === boxId);
+const inTab = () => inBox().filter((i) => i.kind === state.tab);
 const visible = () => inTab().filter((i) => !state.filter || i.tags.includes(state.filter));
 
 function render() {
+  const box = state.boxes.find((b) => b.id === state.box);
+  $('#box-title').textContent = box.name;
+  document.title = box.name;
   document.querySelectorAll('[data-tab]').forEach((b) => {
-    const n = state.items.filter((i) => i.kind === b.dataset.tab).length;
+    const n = inBox().filter((i) => i.kind === b.dataset.tab).length;
     b.setAttribute('aria-selected', b.dataset.tab === state.tab);
     b.textContent = `${b.dataset.tab === 'idea' ? '아이디어' : '자료'} ${n}`;
   });
-  $('#count').textContent = state.items.length ? `${state.items.length}개` : '';
 
   const items = inTab();
   const used = state.tags.map((t) => t.name).filter((n) => items.some((i) => i.tags.includes(n)));
@@ -340,11 +346,14 @@ $('#sheet-form').addEventListener('submit', async (e) => {
       }
       await db.put('items', { ...draft.item, text, tags, images: [...draft.keep, ...newIds], updatedAt: now });
     } else if (draft.kind === 'idea') {
-      await db.put('items', { id: uid(), kind: 'idea', text, tags, images: newIds, createdAt: now, updatedAt: now });
+      await db.put('items', {
+        id: uid(), boxId: state.box, kind: 'idea', text, tags, images: newIds, createdAt: now, updatedAt: now,
+      });
     } else {
       // 고른 순서대로 위에서부터 보이도록 시간을 조금씩 다르게 준다.
       await db.putMany('items', newIds.map((imgId, n) => ({
-        id: uid(), kind: 'ref', text, tags, images: [imgId], createdAt: now + newIds.length - n, updatedAt: now,
+        id: uid(), boxId: state.box, kind: 'ref', text, tags, images: [imgId],
+        createdAt: now + newIds.length - n, updatedAt: now,
       })));
     }
     navigator.storage?.persist?.();
@@ -584,12 +593,110 @@ async function openMenu() {
   openModal($('#menu'));
 }
 
-// 메뉴 바깥(어두운 부분)을 누르면 닫힌다.
-$('#menu').addEventListener('click', (e) => {
-  if (e.target !== e.currentTarget) return;
-  const r = e.currentTarget.getBoundingClientRect();
+// 아래에서 올라오는 창(메뉴, 보관함 목록, 이름 짓기)은 바깥 어두운 부분을 누르면 닫힌다.
+document.querySelectorAll('dialog.sheet-up').forEach((d) => d.addEventListener('click', (e) => {
+  if (e.target !== d) return;
+  const r = d.getBoundingClientRect();
   const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
   if (!inside) closeModal();
+}));
+
+/* ---------- 여러 보관함 ---------- */
+
+async function switchBox(id) {
+  state.box = id;
+  state.filter = null;
+  await db.setMeta('currentBox', id);
+  render();
+  window.scrollTo(0, 0);
+}
+
+function drawBoxRows() {
+  $('#box-rows').innerHTML = state.boxes.map((b) => {
+    const n = inBox(b.id).length;
+    return `<li>
+      <button type="button" class="go ${b.id === state.box ? 'now' : ''}" data-go="${b.id}">
+        <strong>${esc(b.name)}</strong><small>${n}개</small>
+      </button>
+      <button type="button" class="text-btn" data-rename="${b.id}">이름 바꾸기</button>
+      ${state.boxes.length > 1 ? `<button type="button" class="text-btn danger" data-drop="${b.id}">지우기</button>` : ''}
+    </li>`;
+  }).join('');
+}
+
+$('#box-list-btn').addEventListener('click', () => {
+  drawBoxRows();
+  openModal($('#box-list'));
+});
+
+$('#box-rows').addEventListener('click', async (e) => {
+  const go = e.target.closest('[data-go]');
+  const rename = e.target.closest('[data-rename]');
+  const drop = e.target.closest('[data-drop]');
+  if (go) {
+    await switchBox(go.dataset.go);
+    closeModal();
+  } else if (rename) {
+    openBoxName(state.boxes.find((b) => b.id === rename.dataset.rename));
+  } else if (drop) {
+    const box = state.boxes.find((b) => b.id === drop.dataset.drop);
+    const items = inBox(box.id);
+    const msg = items.length
+      ? `'${box.name}' 보관함과 안에 든 ${items.length}개를 모두 지울까요? 되돌릴 수 없어요.`
+      : `'${box.name}' 보관함을 지울까요?`;
+    if (!confirm(msg)) return;
+    for (const item of items) await deleteItem(item);
+    state.boxes = state.boxes.filter((b) => b.id !== box.id);
+    await db.setMeta('boxes', state.boxes);
+    await load();
+    if (state.box === box.id) await switchBox(state.boxes[0].id);
+    else render();
+    drawBoxRows();
+    toast('지웠어요');
+  }
+});
+
+// 이름 짓기 창: box가 있으면 이름 바꾸기, 없으면 새로 만들기
+let naming = null;
+function openBoxName(box = null) {
+  naming = box;
+  $('#box-name-title').textContent = box ? '이름 바꾸기' : '새 보관함';
+  $('#box-name-save').textContent = box ? '바꾸기' : '만들기';
+  $('#box-name-input').value = box ? box.name : '';
+  $('#box-name-error').textContent = '';
+  openModal($('#box-name'));
+  $('#box-name-input').focus();
+}
+
+$('#box-add-btn').addEventListener('click', () => openBoxName());
+$('#box-name-input').addEventListener('input', () => { $('#box-name-error').textContent = ''; });
+
+$('#box-name-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = $('#box-name-input').value.trim();
+  if (!name) {
+    $('#box-name-error').textContent = '보관함 이름을 적어주세요.';
+    return;
+  }
+  if (state.boxes.some((b) => b.name === name && b !== naming)) {
+    $('#box-name-error').textContent = '같은 이름의 보관함이 이미 있어요. 다른 이름을 적어주세요.';
+    return;
+  }
+  if (naming) {
+    naming.name = name;
+    await db.setMeta('boxes', state.boxes);
+    render();
+    drawBoxRows();
+    closeModal();
+    toast('이름을 바꿨어요');
+  } else {
+    const box = { id: uid(), name, createdAt: Date.now() };
+    state.boxes.push(box);
+    await db.setMeta('boxes', state.boxes);
+    closeModal();
+    await switchBox(box.id);
+    toast(`'${name}' 보관함을 만들었어요`);
+  }
 });
 
 // 화면 밝기: auto(폰 설정대로) / light / dark. 이 폰에만 기억해 둔다.
@@ -657,7 +764,7 @@ $('#export-btn').addEventListener('click', async () => {
     }
     const data = {
       app: 'drawing-box', version: 1, exportedAt: new Date().toISOString(),
-      tags: state.tags, items: await db.getAll('items'), images,
+      tags: state.tags, boxes: state.boxes, items: await db.getAll('items'), images,
     };
     const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
     const d = new Date();
@@ -697,6 +804,10 @@ $('#import-file').addEventListener('change', async (e) => {
       if (!state.tags.some((x) => x.name === t.name)) state.tags.push(t);
     }
     await db.setMeta('tags', state.tags);
+    for (const b of data.boxes || []) {
+      if (!state.boxes.some((x) => x.id === b.id)) state.boxes.push(b);
+    }
+    await db.setMeta('boxes', state.boxes);
     await load();
     render();
     closeModal();
@@ -755,6 +866,16 @@ async function start() {
     await db.setMeta('tags', tags);
   }
   state.tags = tags;
+
+  let boxes = await db.getMeta('boxes', null);
+  if (!boxes) {
+    boxes = [{ id: 'main', name: '보관함', createdAt: Date.now() }];
+    await db.setMeta('boxes', boxes);
+  }
+  state.boxes = boxes;
+  const current = await db.getMeta('currentBox', 'main');
+  state.box = boxes.some((b) => b.id === current) ? current : boxes[0].id;
+
   await load();
   render();
   await takeShared();

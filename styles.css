@@ -69,7 +69,33 @@ button { cursor: pointer; }
   font: 400 30px/1 var(--display);
   letter-spacing: -0.5px; margin: 0;
 }
-.count { color: var(--mute); font-size: 13px; flex: 1; }
+.top { align-items: center; }
+.top h1 { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 4px 0; }
+.pill-btn {
+  flex: none; border: 1px solid var(--line); background: var(--card);
+  border-radius: 20px; padding: 6px 12px; font-size: 13px; font-weight: 600;
+}
+.pill-btn:active { background: var(--well); }
+
+/* 보관함 목록 */
+.box-rows { list-style: none; margin: 12px 0 0; padding: 0; }
+.box-rows li { display: flex; align-items: center; gap: 4px; border-bottom: 1px solid var(--line); }
+.box-rows .go {
+  flex: 1; min-width: 0; text-align: left; border: 0; background: none; padding: 14px 2px;
+  display: flex; align-items: baseline; gap: 8px;
+}
+.box-rows .go strong { font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.box-rows .go small { color: var(--mute); font-size: 12px; flex: none; }
+.box-rows .now strong::before { content: "● "; font-size: 10px; vertical-align: 2px; }
+.box-rows .text-btn { font-size: 13px; color: var(--mute); padding: 10px 8px; }
+.box-rows .text-btn.danger { color: var(--danger); }
+.name-input {
+  width: 100%; margin-top: 14px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--card); padding: 12px; font-size: 16px;
+}
+.name-input:focus { outline: 2px solid var(--ink); outline-offset: -1px; }
+.sheet-foot.plain { padding: 14px 0 0; border: 0; background: none; }
+#box-name .error { margin-top: 8px; }
 .icon-btn {
   border: 0; background: none; font-size: 22px; line-height: 1;
   width: 40px; height: 40px; border-radius: 50%;

@@ -21,8 +21,9 @@
 </head>
 <body>
   <header class="top">
-    <h1>보관함</h1>
-    <span class="count" id="count"></span>
+    <h1 id="box-title">보관함</h1>
+    <button class="pill-btn" id="box-add-btn">+ 추가</button>
+    <button class="pill-btn" id="box-list-btn">목록</button>
     <button class="icon-btn" id="menu-btn" aria-label="메뉴">⋯</button>
   </header>
 
@@ -113,6 +114,26 @@
         <button type="button" class="text-btn danger" id="viewer-delete">삭제</button>
       </div>
     </footer>
+  </dialog>
+
+  <!-- 보관함 목록 -->
+  <dialog id="box-list" class="sheet-up">
+    <h2>보관함 목록</h2>
+    <ul class="box-rows" id="box-rows"></ul>
+    <button type="button" class="text-btn" data-close>닫기</button>
+  </dialog>
+
+  <!-- 보관함 이름 짓기 (새로 만들기 / 이름 바꾸기 같이 씀) -->
+  <dialog id="box-name" class="sheet-up">
+    <form id="box-name-form" novalidate>
+      <h2 id="box-name-title">새 보관함</h2>
+      <input id="box-name-input" class="name-input" maxlength="20" placeholder="손 연습, 배경 모음" enterkeyhint="done">
+      <p class="error" id="box-name-error" role="alert"></p>
+      <div class="sheet-foot plain">
+        <button type="button" class="ghost" data-close>취소</button>
+        <button type="submit" class="solid" id="box-name-save">만들기</button>
+      </div>
+    </form>
   </dialog>
 
   <!-- 메뉴 -->
