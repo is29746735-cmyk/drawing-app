@@ -197,9 +197,16 @@ document.querySelectorAll('dialog').forEach((d) => {
 });
 
 let toastTimer;
+// 알림은 맨 위 층(popover)에 띄워서 메뉴 같은 창이 열려 있어도 가려지지 않게 한다.
 function toast(msg) {
   const el = $('#toast');
   el.textContent = msg;
+  if (el.showPopover) {
+    if (el.matches(':popover-open')) el.hidePopover();
+    el.showPopover(); // 다시 띄워야 가장 나중에 열린 창보다 위로 온다
+  }
+  el.classList.remove('show');
+  void el.offsetWidth;
   el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
@@ -341,7 +348,14 @@ $('#sheet-form').addEventListener('submit', async (e) => {
     const tags = state.tags.map((t) => t.name).filter((n) => draft.tags.has(n));
     const now = Date.now();
     const newIds = [];
-    if (isRef) for (const f of draft.files) newIds.push(await saveImage(f.file));
+    if (isRef) {
+      const total = draft.files.length;
+      for (const [n, f] of draft.files.entries()) {
+        // 사진이 여러 장이면 몇 장째인지 보여준다.
+        if (total > 1) setSaveLabel(`저장 중… ${n + 1}/${total}`, true);
+        newIds.push(await saveImage(f.file));
+      }
+    }
 
     if (draft.item) {
       for (const id of draft.removed) {

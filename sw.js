@@ -1,7 +1,7 @@
 // 서비스 워커: 앱 뒤에서 일하는 도우미.
 // 1) 앱 파일을 저장해 두어 인터넷이 없어도 열리게 한다.
 // 2) 다른 앱에서 "공유 → 보관함"으로 보낸 사진·글을 받아 inbox에 넣는다.
-const CACHE = 'box-v6';
+const CACHE = 'box-v7';
 const SHELL = [
   './',
   './index.html',

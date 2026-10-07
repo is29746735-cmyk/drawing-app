@@ -5,7 +5,8 @@
       "name": "drawing-app",
       "runtimeExecutable": "node",
       "runtimeArgs": ["tools/serve.mjs"],
-      "port": 5173
+      "port": 5173,
+      "autoPort": true
     }
   ]
 }

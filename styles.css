@@ -315,7 +315,9 @@ dialog.sheet-up > .text-btn { display: block; margin: 16px auto 0; }
 
 /* 알림 */
 .toast {
+  inset: auto; margin: 0; border: 0; /* popover 기본 위치·모양 지우기 */
   position: fixed; left: 50%; bottom: calc(84px + var(--safe-b)); transform: translate(-50%, 12px);
+  width: max-content; max-width: calc(100% - 32px);
   background: var(--ink); color: var(--paper); font-size: 14px; padding: 10px 16px; border-radius: 10px;
   opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.2s; z-index: 10;
 }
