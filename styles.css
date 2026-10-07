@@ -181,17 +181,30 @@ button { cursor: pointer; }
   flex: 1; height: 52px; border: 0; border-radius: 14px;
   background: var(--ink); color: var(--paper); font-weight: 600; font-size: 16px;
 }
-.dock-tab {
-  flex: none; height: 52px; padding: 0 16px; border-radius: 14px;
-  border: 1px solid var(--line); background: var(--card); font-size: 15px; font-weight: 600;
-}
-.fab:active, .dock-tab:active { transform: scale(0.98); }
+.fab:active { transform: scale(0.98); }
 
-/* 칸을 넘길 때 목록이 밀려 들어오는 움직임 */
-@keyframes from-right { from { transform: translateX(40px); opacity: 0; } }
-@keyframes from-left { from { transform: translateX(-40px); opacity: 0; } }
-#list.in-right { animation: from-right 0.22s ease-out; }
-#list.in-left { animation: from-left 0.22s ease-out; }
+/* 옆 칸으로 넘어가는 작은 화살표: 목록 옆 빈 띠 안에만 놓여서 카드를 가리지 않는다 */
+:root { --edge: 30px; }
+body[data-view="idea"] #list { padding-right: var(--edge); }
+body[data-view="ref"] #list { padding-left: var(--edge); }
+.edge-arrow {
+  position: fixed; top: 50%; transform: translateY(-50%); z-index: 2;
+  width: var(--edge); height: 96px; padding: 0; border: 0; background: none;
+  display: grid; place-items: center;
+}
+.edge-arrow.right { right: 0; }
+.edge-arrow.left { left: 0; }
+.edge-arrow span {
+  display: grid; place-items: center; width: 20px; height: 44px;
+  background: var(--well); color: var(--mute); font-size: 20px; line-height: 1;
+}
+.edge-arrow.right span { border-radius: 10px 0 0 10px; margin-left: auto; }
+.edge-arrow.left span { border-radius: 0 10px 10px 0; margin-right: auto; }
+.edge-arrow:active span { background: var(--line); color: var(--ink); }
+
+/* 칸이 바뀔 때 제자리에서 살짝 바뀐다 (옆으로 밀리지 않음) */
+@keyframes appear { from { opacity: 0; } }
+#list.appear { animation: appear 0.15s ease-out; }
 
 /* 대화상자 공통 */
 dialog { border: 0; padding: 0; color: var(--ink); }

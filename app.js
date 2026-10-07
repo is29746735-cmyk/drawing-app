@@ -127,7 +127,8 @@ function render() {
     b.setAttribute('aria-selected', b.dataset.tab === state.tab);
     b.textContent = `${b.dataset.tab === 'idea' ? '아이디어' : '자료'} ${n}`;
   });
-  // 아래 화살표는 지금 칸이 아닌 쪽 하나만 보인다.
+  // 화살표는 지금 칸이 아닌 쪽 하나만 보인다. (목록 옆 빈 띠도 그쪽에만 생긴다)
+  document.body.dataset.view = state.tab;
   $('#go-idea').hidden = state.tab === 'idea';
   $('#go-ref').hidden = state.tab === 'ref';
 
@@ -831,9 +832,9 @@ function setTab(tab) {
   render();
   window.scrollTo(0, 0);
   const list = $('#list');
-  list.classList.remove('in-left', 'in-right');
+  list.classList.remove('appear');
   void list.offsetWidth; // 움직임을 처음부터 다시 시작
-  list.classList.add(tab === 'ref' ? 'in-right' : 'in-left');
+  list.classList.add('appear');
 }
 
 $('.seg[role="tablist"]').addEventListener('click', (e) => {

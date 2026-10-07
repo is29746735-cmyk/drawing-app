@@ -36,11 +36,12 @@
 
   <main id="list"></main>
 
-  <!-- 엄지가 닿는 아래쪽: 칸 넘기기 화살표 + 담기 -->
+  <!-- 화면 가운데 끝의 작은 화살표: 누르면 옆 칸으로 -->
+  <button class="edge-arrow right" id="go-ref" data-go-tab="ref" aria-label="자료 칸으로"><span>›</span></button>
+  <button class="edge-arrow left" id="go-idea" data-go-tab="idea" aria-label="아이디어 칸으로"><span>‹</span></button>
+
   <div class="dock">
-    <button class="dock-tab" id="go-idea" data-go-tab="idea">‹ 아이디어</button>
     <button class="fab" id="add-btn">+ 담기</button>
-    <button class="dock-tab" id="go-ref" data-go-tab="ref">자료 ›</button>
   </div>
 
   <!-- 담기 / 수정 -->
