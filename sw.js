@@ -1,7 +1,7 @@
 // 서비스 워커: 앱 뒤에서 일하는 도우미.
 // 1) 앱 파일을 저장해 두어 인터넷이 없어도 열리게 한다.
 // 2) 다른 앱에서 "공유 → 보관함"으로 보낸 사진·글을 받아 inbox에 넣는다.
-const CACHE = 'box-v3';
+const CACHE = 'box-v4';
 const SHELL = [
   './',
   './index.html',
@@ -14,7 +14,12 @@ const SHELL = [
 ];
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: 'reload' = 저장해 둔 옛 파일 말고 서버에서 새로 받기
+  event.waitUntil(
+    caches.open(CACHE)
+      .then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: 'reload' }))))
+      .then(() => self.skipWaiting()),
+  );
 });
 
 self.addEventListener('activate', (event) => {
@@ -49,7 +54,7 @@ self.addEventListener('fetch', (event) => {
   // 앱 파일: 새 버전을 먼저 받아보고, 인터넷이 없으면 저장본을 쓴다.
   if (url.origin === self.location.origin) {
     event.respondWith(
-      fetch(event.request)
+      fetch(event.request.url, { cache: 'no-cache' })
         .then((res) => {
           const copy = res.clone();
           caches.open(CACHE).then((c) => c.put(event.request, copy));

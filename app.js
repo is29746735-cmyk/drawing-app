@@ -881,5 +881,13 @@ async function start() {
   await takeShared();
 }
 
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
+if ('serviceWorker' in navigator) {
+  // 새 버전이 도착하면 한 번 새로고침해서 바로 바꿔 쓴다.
+  // 처음 설치할 때나, 뭔가 적고 있는 창이 열려 있을 때는 건드리지 않는다.
+  const hadVersion = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (hadVersion && !stack.length) location.reload();
+  });
+  navigator.serviceWorker.register('./sw.js');
+}
 start();
